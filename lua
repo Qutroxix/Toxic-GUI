@@ -1,152 +1,192 @@
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+-- Services
+local Player = game:GetService("Players").LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+local UIS = game:GetService("UserInputService")
 
-local Player = Players.LocalPlayer
-local Character = Player.Character or Player.CharacterAdded:Wait()
-local Backpack = Player:WaitForChild("Backpack")
+-- Configuration
+local Config = {
+    GUI = {
+        BackgroundColor = Color3.fromRGB(0, 0, 0),
+        TextColor = Color3.fromRGB(0, 170, 255),
+        Font = Enum.Font.SciFi,
+    },
+    Size = {
+        Full = UDim2.new(0, 400, 0, 400),
+        Minimized = UDim2.new(0, 400, 0, 50),
+    }
+}
 
 -- Create ScreenGui
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = Player:WaitForChild("PlayerGui")
-screenGui.Name = "ToxicMustardGasYT_GUI"
-screenGui.ResetOnSpawn = false
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ToxicMustardGasYT_GUI"
+ScreenGui.Parent = PlayerGui
 
--- Toggle Button
-local toggleButton = Instance.new("TextButton")
-toggleButton.Parent = screenGui
-toggleButton.Size = UDim2.new(0, 80, 0, 30)
-toggleButton.Position = UDim2.new(0, 10, 0, 10)
-toggleButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-toggleButton.BorderSizePixel = 2
-toggleButton.BorderColor3 = Color3.fromRGB(0, 0, 255)
-toggleButton.Text = "Open"
-toggleButton.Font = Enum.Font.SciFi
-toggleButton.TextSize = 14
-toggleButton.TextColor3 = Color3.fromRGB(0, 170, 255)
+-- Create Open Button
+local OpenButton = Instance.new("TextButton")
+OpenButton.Name = "OpenButton"
+OpenButton.Size = UDim2.new(0, 100, 0, 50)
+OpenButton.Position = UDim2.new(0, 10, 0, 10)
+OpenButton.BackgroundColor3 = Config.GUI.BackgroundColor
+OpenButton.TextColor3 = Config.GUI.TextColor
+OpenButton.Text = "OPEN"
+OpenButton.Font = Config.GUI.Font
+OpenButton.TextSize = 20
+OpenButton.Parent = ScreenGui
 
--- Main Frame
-local mainFrame = Instance.new("Frame")
-mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0, 300, 0, 220)
-mainFrame.Position = UDim2.new(0.5, -150, 0.5, -110)
-mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-mainFrame.BorderSizePixel = 2
-mainFrame.BorderColor3 = Color3.fromRGB(0, 0, 255)
-mainFrame.Visible = false
+-- Create Main GUI Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = Config.Size.Full
+MainFrame.Position = UDim2.new(0.5, -200, 0.5, -200)
+MainFrame.BackgroundColor3 = Config.GUI.BackgroundColor
+MainFrame.BorderSizePixel = 0
+MainFrame.Visible = false
+MainFrame.Parent = ScreenGui
 
--- Title Label
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Parent = mainFrame
-titleLabel.Size = UDim2.new(1, 0, 0, 30)
-titleLabel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-titleLabel.BorderSizePixel = 2
-titleLabel.BorderColor3 = Color3.fromRGB(0, 0, 255)
-titleLabel.Text = "ToxicMustardGasYT's GUI"
-titleLabel.Font = Enum.Font.SciFi
-titleLabel.TextSize = 18
-titleLabel.TextColor3 = Color3.fromRGB(0, 170, 255)
-
--- Tabs Frame
-local tabsFrame = Instance.new("Frame")
-tabsFrame.Parent = mainFrame
-tabsFrame.Size = UDim2.new(1, 0, 0, 30)
-tabsFrame.Position = UDim2.new(0, 0, 0, 30)
-tabsFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-tabsFrame.BorderSizePixel = 2
-tabsFrame.BorderColor3 = Color3.fromRGB(0, 0, 255)
-
--- Content Frame
-local contentFrame = Instance.new("Frame")
-contentFrame.Parent = mainFrame
-contentFrame.Size = UDim2.new(1, 0, 1, -60)
-contentFrame.Position = UDim2.new(0, 0, 0, 60)
-contentFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-
-local tabButtons = {}
-local tabContents = {}
-
--- Function to Create Tab Button
-local function createTabButton(name, index)
-    local button = Instance.new("TextButton")
-    button.Parent = tabsFrame
-    button.Size = UDim2.new(0, 70, 1, 0)
-    button.Position = UDim2.new(0, (index - 1) * 75, 0, 0)
-    button.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-    button.BorderSizePixel = 2
-    button.BorderColor3 = Color3.fromRGB(0, 0, 255)
-    button.Text = name
-    button.Font = Enum.Font.SciFi
-    button.TextSize = 14
-    button.TextColor3 = Color3.fromRGB(0, 170, 255)
-    tabButtons[name] = button
-    return button
+-- Dragging Logic for MainFrame
+local dragging, dragInput, dragStart, startPos
+local function update(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
 end
 
--- Function to Create Tab Content
-local function createTabContent(name)
-    local content = Instance.new("Frame")
-    content.Parent = contentFrame
-    content.Size = UDim2.new(1, 0, 1, 0)
-    content.BackgroundTransparency = 1
-    content.Visible = false
-    tabContents[name] = content
-    return content
-end
+MainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
 
--- Function to Show Tabs
-local function showTab(name)
-    for tabName, content in pairs(tabContents) do
-        content.Visible = (tabName == name)
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
+end)
+
+MainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+-- Add Minimize and Close Buttons
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Size = UDim2.new(0, 50, 0, 30)
+CloseButton.Position = UDim2.new(1, -60, 0, 10)
+CloseButton.BackgroundColor3 = Config.GUI.BackgroundColor
+CloseButton.TextColor3 = Config.GUI.TextColor
+CloseButton.Text = "X"
+CloseButton.Font = Config.GUI.Font
+CloseButton.TextSize = 16
+CloseButton.Parent = MainFrame
+
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Size = UDim2.new(0, 50, 0, 30)
+MinimizeButton.Position = UDim2.new(1, -120, 0, 10)
+MinimizeButton.BackgroundColor3 = Config.GUI.BackgroundColor
+MinimizeButton.TextColor3 = Config.GUI.TextColor
+MinimizeButton.Text = "-"
+MinimizeButton.Font = Config.GUI.Font
+MinimizeButton.TextSize = 16
+MinimizeButton.Parent = MainFrame
+
+-- Tabs Container
+local TabsContainer = Instance.new("Frame")
+TabsContainer.Name = "TabsContainer"
+TabsContainer.Size = UDim2.new(1, 0, 0, 30)
+TabsContainer.Position = UDim2.new(0, 0, 0, 50)
+TabsContainer.BackgroundColor3 = Config.GUI.BackgroundColor
+TabsContainer.BorderSizePixel = 0
+TabsContainer.Parent = MainFrame
+
+-- Tabs Logic
+local Tabs = {"Orbit", "Gears", "Speed/Jump", "Credits"}
+local Buttons = {}
+local ActiveTab = nil
+local TabContents = {}
+
+local function createTabButton(name)
+    local Button = Instance.new("TextButton")
+    Button.Name = name .. "Tab"
+    Button.Text = name
+    Button.Size = UDim2.new(0, 100, 1, 0)
+    Button.BackgroundColor3 = Config.GUI.BackgroundColor
+    Button.TextColor3 = Config.GUI.TextColor
+    Button.Font = Config.GUI.Font
+    Button.TextSize = 14
+    Button.Parent = TabsContainer
+    Buttons[name] = Button
+    return Button
 end
 
--- Add Tabs
-local orbitButton = createTabButton("Orbit", 1)
-local orbitTab = createTabContent("Orbit")
-orbitButton.MouseButton1Click:Connect(function()
-    showTab("Orbit")
+local function switchTab(tabName)
+    if ActiveTab then
+        TabContents[ActiveTab].Visible = false
+    end
+    ActiveTab = tabName
+    TabContents[tabName].Visible = true
+end
+
+for _, tabName in ipairs(Tabs) do
+    local Button = createTabButton(tabName)
+    local ContentFrame = Instance.new("Frame")
+    ContentFrame.Name = tabName .. "Content"
+    ContentFrame.Size = UDim2.new(1, 0, 1, -80)
+    ContentFrame.Position = UDim2.new(0, 0, 0, 80)
+    ContentFrame.BackgroundColor3 = Config.GUI.BackgroundColor
+    ContentFrame.Visible = false
+    ContentFrame.Parent = MainFrame
+    TabContents[tabName] = ContentFrame
+
+    Button.MouseButton1Click:Connect(function()
+        switchTab(tabName)
+    end)
+end
+
+-- Credits Tab
+local CreditsLabel = Instance.new("TextLabel")
+CreditsLabel.Text = "GUI Made By ToxicMustardGasYT\nDiscord: toxicmustardgasyt"
+CreditsLabel.Size = UDim2.new(1, 0, 0, 100)
+CreditsLabel.BackgroundTransparency = 1
+CreditsLabel.TextColor3 = Config.GUI.TextColor
+CreditsLabel.Font = Config.GUI.Font
+CreditsLabel.TextSize = 16
+CreditsLabel.Parent = TabContents["Credits"]
+
+-- Toggle Open/Close
+OpenButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = not MainFrame.Visible
+    OpenButton.Text = MainFrame.Visible and "CLOSE" or "OPEN"
 end)
 
-local dupeToolsButton = createTabButton("Dupe", 2)
-local dupeTab = createTabContent("Dupe")
-dupeToolsButton.MouseButton1Click:Connect(function()
-    showTab("Dupe")
+-- Close Button Logic
+CloseButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    OpenButton.Text = "OPEN"
 end)
 
-local dropToolsButton = createTabButton("Drop", 3)
-local dropTab = createTabContent("Drop")
-dropToolsButton.MouseButton1Click:Connect(function()
-    showTab("Drop")
+-- Minimize Button Logic
+MinimizeButton.MouseButton1Click:Connect(function()
+    if MainFrame.Size == Config.Size.Full then
+        MainFrame.Size = Config.Size.Minimized
+    else
+        MainFrame.Size = Config.Size.Full
+    end
 end)
 
-local removeMeshButton = createTabButton("Remove", 4)
-local removeMeshTab = createTabContent("Remove")
-removeMeshButton.MouseButton1Click:Connect(function()
-    showTab("Remove")
-end)
-
-local creditsButton = createTabButton("Credits", 5)
-local creditsTab = createTabContent("Credits")
-creditsButton.MouseButton1Click:Connect(function()
-    showTab("Credits")
-end)
-
--- Credits Content
-local creditsLabel = Instance.new("TextLabel")
-creditsLabel.Parent = creditsTab
-creditsLabel.Size = UDim2.new(1, 0, 1, 0)
-creditsLabel.Text = "GUI Made By Sailors\nDiscord: toxicmustardgasyt\n\nTabs:\n- Orbit: Orbit tools.\n- Remove Mesh: Removes tool meshes.\n- Drop Tools: Drops tools.\n- Dupe Tools: Duplicate tools."
-creditsLabel.Font = Enum.Font.SciFi
-creditsLabel.TextSize = 14
-creditsLabel.TextColor3 = Color3.fromRGB(0, 170, 255)
-creditsLabel.BackgroundTransparency = 1
-creditsLabel.TextWrapped = true
-
--- Toggle Button Logic
-local isOpen = false
-toggleButton.MouseButton1Click:Connect(function()
-    isOpen = not isOpen
-    mainFrame.Visible = isOpen
-    toggleButton.Text = isOpen and "Close" or "Open"
-end)
+-- Default to First Tab
+switchTab("Orbit")
